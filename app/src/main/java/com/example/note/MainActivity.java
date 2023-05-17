@@ -3,6 +3,7 @@ package com.example.note;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -12,12 +13,20 @@ import android.widget.TextView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-public class MainActivity extends AppCompatActivity {
+import java.util.ArrayList;
+import java.util.List;
 
+public class MainActivity extends BaseActivity {
+
+    private NoteDatabase dbHelper;
+
+    private Context context = this;
     final String TAG = "tag";
     FloatingActionButton btn;
     TextView tv;
-    ListView lv;
+    private ListView lv;
+    private NoteAdapter adapter;
+    private List<Note> noteList = new ArrayList<Note>();
 
 
     @Override
@@ -25,7 +34,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         btn = (FloatingActionButton)findViewById(R.id.fab);
-        tv = findViewById(R.id.tv);
+        lv = findViewById(R.id.lv);
+
+        adapter = new NoteAdapter(getApplicationContext(), noteList);
+        refreshListView();
+        lv.setAdapter(adapter);
+
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -40,7 +54,24 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode,int resultCode, Intent data){
         super.onActivityResult(requestCode,resultCode,data);
-        String edit = data.getStringExtra("input");
-        tv.setText(edit);
+        String content = data.getStringExtra("content");
+        String time = data.getStringExtra("time");
+        Note note = new Note(content,time,1);
+        CRUD op = new CRUD(context);
+        op.open();
+        op.addNote(note);
+        op.close();
+        refreshListView();
+    }
+
+    public void refreshListView(){
+
+        CRUD op = new CRUD(context);
+        op.open();
+        // set adapter
+        if (noteList.size() > 0) noteList.clear();
+        noteList.addAll(op.getAllNotes());
+        op.close();
+        adapter.notifyDataSetChanged();
     }
 }
